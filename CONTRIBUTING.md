@@ -5,7 +5,7 @@ Use `main` as the base branch and keep each change focused on one behavior or fi
 ## Development
 
 1. Check out this repository into a Unity 2022.3 project's `Packages/com.hacbit.ide.openidea` directory.
-2. Keep integration code in `Editor/`, under the `Hacbit.OpenIDEA.Editor` namespace.
+2. Keep integration code in `Editor/`, under the `OpenIDEA.Editor` namespace.
 3. Commit Unity-generated `.meta` files with new assets. Preserve existing GUIDs when moving assets.
 4. Follow `.editorconfig` and update the changelog for user-visible changes.
 
@@ -17,3 +17,13 @@ Use `main` as the base branch and keep each change focused on one behavior or fi
 - In pull requests, describe the resulting behavior and the verification performed. Identify checks that could not be run.
 
 Keep third-party copyright and license notices when reusing code.
+
+## Package tests
+
+Install Unity Test Framework in the host project and add the package to the project's `Packages/manifest.json` testables list:
+
+```json
+"testables": ["com.hacbit.ide.openidea"]
+```
+
+Run `OpenIDEA.Editor.Tests` from the Test Runner's EditMode tab. The test assembly is Editor-only and uses `TestAssemblies`; the integration assembly does not reference NUnit.
