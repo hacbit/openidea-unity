@@ -1,0 +1,16 @@
+{
+  "name": "Hacbit.OpenIDEA.Editor",
+  "rootNamespace": "Hacbit.OpenIDEA.Editor",
+  "references": [],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
