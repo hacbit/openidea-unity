@@ -1,6 +1,6 @@
 {
-  "name": "Hacbit.OpenIDEA.Editor",
-  "rootNamespace": "Hacbit.OpenIDEA.Editor",
+  "name": "OpenIDEA.Editor",
+  "rootNamespace": "OpenIDEA.Editor",
   "references": [],
   "includePlatforms": [
     "Editor"
