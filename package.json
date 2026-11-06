@@ -4,7 +4,7 @@
   "description": "Unity Editor integration for OpenIDEA. Initial package scaffold; editor discovery, file opening, and project generation are not implemented yet.",
   "version": "0.1.0",
   "unity": "2022.3",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": {
     "name": "hacbit",
     "url": "https://github.com/hacbit"

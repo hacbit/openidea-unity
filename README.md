@@ -46,4 +46,6 @@ See [the integration notes](Documentation~/index.md) and [contributing guide](CO
 
 ## License
 
-[MIT](LICENSE.md). The starting directory was copied from Unity's Rider editor package. Its implementation has been removed from this scaffold; the original notices are preserved in [Third Party Notices](Third%20Party%20Notices.md).
+Copyright (c) 2026 hacbit. Licensed under the [Apache License 2.0](LICENSE.md).
+
+The starting directory was copied from Unity's Rider editor package. Its implementation has been removed from this scaffold; the original MIT license notices are preserved in [Third Party Notices](Third%20Party%20Notices.md).
