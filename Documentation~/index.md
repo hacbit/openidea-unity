@@ -8,7 +8,7 @@ Editor assembly: `OpenIDEA.Editor`
 
 `OpenIDEAScriptEditor` registers with Unity's `Unity.CodeEditor` API. `OpenIDEADiscovery` supplies installation candidates and validates paths selected through Unity's **External Script Editor > Browse…** control.
 
-Discovery is available on Windows, macOS, and Linux. File opening and project generation are not implemented yet: opening reports that it was not handled, and synchronization callbacks do no work. Argument controls are disabled until file opening is implemented.
+Discovery and project/script opening are implemented for Windows, macOS, and Linux. Solution and project file generation are not implemented yet; synchronization callbacks do no work.
 
 ## Discovery
 
@@ -26,13 +26,19 @@ The Windows executable name, macOS bundle name, and installation layout follow O
 The adapter implements Unity's `Unity.CodeEditor.IExternalCodeEditor` interface. Its responsibilities are:
 
 1. Identify and discover OpenIDEA installations (implemented).
-2. Open a Unity project in OpenIDEA (planned).
-3. Open a script at a requested source position (planned).
+2. Open a Unity project in OpenIDEA (implemented).
+3. Open a script at a requested source position (implemented).
 4. Generate and synchronize `.sln` and `.csproj` files from Unity's compilation data (planned).
 
 All integration code belongs in the Editor assembly. Add tests alongside each implemented behavior.
 
 ## OpenIDEA launch arguments
+
+`OpenIDEAScriptEditor.OpenProject` passes the current Unity editor selection and project root to `OpenIDEALauncher`. The launcher validates the executable and target file, expands the argument template, and starts the chosen executable directly with the project as its working directory. macOS bundles use `/usr/bin/open -n -a <bundle> --args ...` so a second launch can forward arguments through OpenIDEA's single-instance handling.
+
+`OpenIDEAArguments` performs platform-specific quoting without invoking a shell. Placeholder replacement runs once, so text such as `$(Line)` inside a real filename stays literal. Existing quotes around individual placeholders are normalized before replacement.
+
+An empty target or the project directory opens only the project. Script paths may be relative to the Unity project or absolute, including paths to external packages. Unhandled extensions and missing files return `false` without launching. Process-start failures are reported to the Console; a successfully started process returns `true`, preventing fallback to the operating system's file association. This acknowledges process launch, not an application-level file-open response.
 
 The OpenIDEA source inspected when creating this scaffold accepts a positional project directory and optional file and source coordinates:
 
@@ -45,4 +51,6 @@ openidea "<project directory>" --file "<script path>" --line 42 --column 7
 - A coordinate of `0` or `-1` means the position is unknown.
 - The project directory and file must exist.
 
-Verify the contract against the targeted OpenIDEA version when implementing the launcher. The relevant OpenIDEA sources are `src-tauri/src/windows/cli.rs` and `src-tauri/src/windows.rs`.
+The argument template is used for file requests. Project-only requests pass the quoted project directory alone. Supported file extensions are configurable in External Tools, independently of the argument template.
+
+When updating launch behavior, verify the contract against the targeted OpenIDEA version. The relevant OpenIDEA sources are `src-tauri/src/windows/cli.rs` and `src-tauri/src/windows.rs`.

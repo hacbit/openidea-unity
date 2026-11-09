@@ -2,7 +2,7 @@
 
 Unity Editor integration for [OpenIDEA](https://github.com/l0ng-ai/openidea), maintained as the UPM package `com.hacbit.ide.openidea`.
 
-**Status: editor discovery is available.** The package registers OpenIDEA as an external script editor and recognizes installed or manually selected copies. Script opening and solution/project generation are not implemented yet.
+The package discovers OpenIDEA installations, supports manually selected copies, and opens Unity projects and scripts at the requested line and column. Solution and project file generation are not implemented yet.
 
 ## Target
 
@@ -23,6 +23,22 @@ Unity saves the selected path. Custom locations remain in the list while their e
 
 Select the IDE itself, not its installer, uninstaller, or `openidea-server` helper. A macOS app bundle must contain `Contents/MacOS/openidea`.
 
+## Open projects and scripts
+
+After selecting OpenIDEA, double-click a script or a source location in the Console to open it. **Assets > Open C# Project** opens the Unity project directory without a file argument. OpenIDEA's single-instance handling receives requests when the IDE is already running.
+
+In External Tools, **External Script Editor Args** controls file-opening arguments. The default is:
+
+```text
+$(ProjectPath) --file $(File) --line $(Line) --column $(Column)
+```
+
+Paths are quoted automatically, including spaces and non-ASCII characters. Previously saved templates with quotes around the placeholders are accepted. Line and column values are one-based; unknown positions are sent as `0`. Project-only opening sends just the project directory.
+
+**Extensions handled** is a semicolon-separated list. Defaults include Unity's project-generation extensions and `cs`, `json`, `asmdef`, `asmref`, `rsp`, `log`, and `txt`. Other assets remain available to Unity's normal handlers. No `.cs` file association in Windows is required.
+
+The selected OpenIDEA build must support the `--file`, `--line`, and `--column` arguments. If launching the editor fails, the package reports the error in the Unity Console.
+
 ## Local development
 
 The repository root is the package root. Keep this checkout at:
@@ -34,8 +50,8 @@ The repository root is the package root. Keep this checkout at:
 Unity imports it as an embedded package. Commit changes from this directory; the surrounding Unity project and its generated files are outside this repository.
 
 ```text
-Editor/          Editor registration and installation discovery
-Tests/Editor/    Discovery and Unity integration tests
+Editor/          Editor registration, discovery, and launching
+Tests/Editor/    Discovery, argument, launcher, and integration tests
 Documentation~/  Package documentation
 package.json     UPM package manifest
 ```
@@ -52,7 +68,6 @@ https://github.com/hacbit/openidea-unity.git
 
 ## Planned integration
 
-- Open projects and scripts at the requested line and column.
 - Generate and synchronize C# solutions and projects.
 
 See [the integration notes](Documentation~/index.md) and [contributing guide](CONTRIBUTING.md).
