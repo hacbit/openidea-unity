@@ -15,5 +15,9 @@
 - Add a Regenerate project files button and independent package-source options in External Tools, with Embedded and Local packages enabled by default.
 - Preserve Unity references, defines, compiler settings, analyzers, and response-file inputs; map package paths to their physical locations and keep excluded package dependencies as DLL references.
 - Keep generated output deterministic, avoid rewriting unchanged files, and isolate design-time outputs under `Temp/OpenIDEA/`.
+- Automatically synchronize after compilation, assembly reload, relevant asset and package changes, build-target changes, and package-source option changes while OpenIDEA is selected.
+- Combine consecutive requests and defer generation during imports, compilation, and player builds; preserve the manual regeneration button.
+- Synchronize before valid open requests when needed, repair missing generated files, and continue launching even if generation is busy or fails.
+- Add synchronization tests for deferral, editor selection, file-change filtering, failure recovery, and unchanged output timestamps.
 
-Automatic project synchronization, generation callbacks, Player-only projects, and obsolete project cleanup are not implemented yet.
+Generation callbacks, Player-only projects, and obsolete project cleanup are not implemented yet.

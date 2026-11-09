@@ -2,7 +2,7 @@
 
 Unity Editor integration for [OpenIDEA](https://github.com/l0ng-ai/openidea), maintained as the UPM package `com.hacbit.ide.openidea`.
 
-The package discovers OpenIDEA installations, supports manually selected copies, opens projects and scripts at the requested line and column, and manually generates C# solutions and projects for OpenIDEA.
+The package discovers OpenIDEA installations, supports manually selected copies, opens projects and scripts at the requested line and column, and generates and synchronizes C# solutions and projects for OpenIDEA.
 
 ## Target
 
@@ -41,15 +41,17 @@ The selected OpenIDEA build must support the `--file`, `--line`, and `--column` 
 
 ## Generate C# project files
 
-In **Preferences > External Tools**, select OpenIDEA, choose the package sources under **Generate .csproj files for**, and click **Regenerate project files**. The panel reports the number of projects generated and files updated. Wait for Unity to finish importing and compiling before generating.
+In **Preferences > External Tools**, select OpenIDEA and choose the package sources under **Generate .csproj files for**. Project files synchronize automatically while OpenIDEA is selected. **Regenerate project files** remains available for an immediate manual refresh when Unity is idle; the panel reports the number of projects generated and files updated.
 
-Assets assemblies are always included. **Embedded packages** and **Local packages** are enabled by default. Registry, Git, built-in, local tarball, and unknown package sources can be enabled individually. These preferences belong to OpenIDEA and do not change another editor's generation settings. Changes take effect when you regenerate.
+Assets assemblies are always included. **Embedded packages** and **Local packages** are enabled by default. Registry, Git, built-in, local tarball, and unknown package sources can be enabled individually. These preferences belong to OpenIDEA and do not change another editor's generation settings. Changing an option schedules synchronization automatically.
+
+Synchronization runs after script compilation, assembly reload, relevant file changes, package registration, and build-target changes. Consecutive notifications are combined, and generation waits until importing, compiling, and player builds have finished. On the first valid project/script open in a domain, pending synchronization runs before launching when Unity is idle. Later opens reuse the files, repairing missing solutions or projects when needed. If Unity is busy or generation fails, opening still proceeds; queued work resumes when Unity is idle, and failures are reported in the Console without retrying every frame.
 
 The package writes `<project directory name>.sln` and one SDK-style `.csproj` per selected Unity assembly in the Unity project root. Source references, defines, language version, unsafe settings, analyzers, and response-file options come from Unity's Editor compilation graph. Excluded packages remain available through DLL references; include their source projects when you want source analysis and navigation. Missing compiled DLLs require Unity to compile those dependencies first.
 
 OpenIDEA uses `csharp-ls` to load these files. A compatible .NET SDK and language server must be available in OpenIDEA. Generated projects use explicit Unity references and put design-time outputs under `Temp/OpenIDEA/`.
 
-Generation replaces the standard solution and matching project files. Unchanged contents are not rewritten. Previously generated projects that are no longer selected are removed from the solution but their `.csproj` files are retained. Automatic synchronization, Player-only projects, and AssetPostprocessor generation callbacks are not implemented in this first step; regenerate manually after changing files, packages, defines, or build targets. Opening a script alone does not regenerate the solution.
+Generation replaces the standard solution and matching project files. Unchanged contents are not rewritten, so ordinary script-body edits do not change project-file timestamps. Previously generated projects that are no longer selected are removed from the solution but their `.csproj` files are retained. Player-only projects and AssetPostprocessor generation callbacks are not implemented yet.
 
 ## Local development
 
@@ -80,7 +82,6 @@ https://github.com/hacbit/openidea-unity.git
 
 ## Planned integration
 
-- Automatically synchronize C# solutions and projects as Unity compilation inputs change.
 - Support generation callbacks, Player configurations, and cleanup of obsolete generated projects.
 
 See [the integration notes](Documentation~/index.md) and [contributing guide](CONTRIBUTING.md).

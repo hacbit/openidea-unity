@@ -37,7 +37,7 @@ namespace OpenIDEA.Editor
             var changed = 0;
             foreach (var file in files)
                 if (WriteIfChanged(file.Key, file.Value)) changed++;
-            return new ProjectGenerationResult(solution, selected.Length, changed);
+            return new ProjectGenerationResult(solution, selected.Length, changed, files.Select(file => file.Key).ToArray());
         }
 
         private static string ProjectText(ProjectAssembly assembly, Dictionary<string, ProjectAssembly> all, HashSet<string> selected)

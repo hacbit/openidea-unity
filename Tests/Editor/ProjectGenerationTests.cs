@@ -42,6 +42,7 @@ namespace OpenIDEA.Editor.Tests
             assembly.AllowUnsafe = true;
             assembly.BinaryReferences.Add(new ProjectBinaryReference("Unity/UnityEngine.CoreModule.dll"));
             var result = OpenIDEAProjectGeneration.Write(_root, new[] { assembly });
+            Assert.That(result.GeneratedFiles, Is.EquivalentTo(new[] { result.SolutionPath, Path.Combine(_root, "Game.csproj") }));
             var project = Project("Game");
             Assert.That(result.ProjectCount, Is.EqualTo(1));
             Assert.That(result.ChangedFiles, Is.EqualTo(2));

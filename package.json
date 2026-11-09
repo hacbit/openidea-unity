@@ -1,7 +1,7 @@
 {
   "name": "com.hacbit.ide.openidea",
   "displayName": "OpenIDEA Editor",
-  "description": "Unity Editor integration for OpenIDEA, with installation discovery, manual editor-path selection, project and script opening, and manual C# solution/project generation with package-source options.",
+  "description": "Unity Editor integration for OpenIDEA, with installation discovery, manual editor-path selection, project and script opening, and automatic C# solution/project synchronization with package-source options.",
   "version": "0.1.0",
   "unity": "2022.3",
   "license": "Apache-2.0",

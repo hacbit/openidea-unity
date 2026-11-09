@@ -8,7 +8,7 @@ Editor assembly: `OpenIDEA.Editor`
 
 `OpenIDEAScriptEditor` registers with Unity's `Unity.CodeEditor` API. `OpenIDEADiscovery` supplies installation candidates and validates paths selected through Unity's **External Script Editor > Browse…** control.
 
-Discovery and project/script opening are implemented for Windows, macOS, and Linux. Manual solution/project generation is available through External Tools and `SyncAll`. `SyncIfNeeded` remains a no-op until automatic synchronization is implemented.
+Discovery and project/script opening are implemented for Windows, macOS, and Linux. Solution/project generation is available through External Tools and `SyncAll`, with automatic synchronization while OpenIDEA is selected.
 
 ## Discovery
 
@@ -28,7 +28,7 @@ The adapter implements Unity's `Unity.CodeEditor.IExternalCodeEditor` interface.
 1. Identify and discover OpenIDEA installations (implemented).
 2. Open a Unity project in OpenIDEA (implemented).
 3. Open a script at a requested source position (implemented).
-4. Generate `.sln` and `.csproj` files from Unity's compilation data (manual generation implemented; automatic synchronization planned).
+4. Generate and synchronize `.sln` and `.csproj` files from Unity's compilation data (implemented).
 
 All integration code belongs in the Editor assembly. Add tests alongside each implemented behavior.
 
@@ -55,9 +55,9 @@ The argument template is used for file requests. Project-only requests pass the 
 
 When updating launch behavior, verify the contract against the targeted OpenIDEA version. The relevant OpenIDEA sources are `src-tauri/src/windows/cli.rs` and `src-tauri/src/windows.rs`.
 
-## Manual project generation
+## Project generation
 
-`OpenIDEAScriptEditor.SyncAll` collects the current `CompilationPipeline.GetAssemblies(AssembliesType.Editor)` graph and calls the generator. The External Tools button uses this same entry point. Generation is disabled while Unity imports or compiles. It does not start OpenIDEA, request compilation, or register an asset-change listener.
+`OpenIDEAScriptEditor.SyncAll` requests an immediate synchronization of the current `CompilationPipeline.GetAssemblies(AssembliesType.Editor)` graph. The External Tools button uses this same entry point. If Unity is importing, compiling, or building a player, the request is deferred. Generation itself does not start OpenIDEA, refresh the AssetDatabase, request compilation, or resolve packages.
 
 The implementation is split between:
 
@@ -66,11 +66,27 @@ The implementation is split between:
 - `ProjectPathResolver`: maps package asset paths to `PackageInfo.resolvedPath`, including package-cache and external local files.
 - `ProjectCompilerOptions`: maps relevant additional and response-file arguments to design-time settings.
 - `OpenIDEAProjectGeneration`: deterministic SDK project and solution output with stable assembly identities, explicit source lists, project references for included assemblies, and DLL references for excluded assemblies.
+- `ProjectGenerationChanges`: identifies compilation inputs in Unity's added, deleted, moved, moved-from, and imported file lists, without needing a deleted source to still exist.
+- `ProjectSynchronization`: combines pending requests, waits for idle time, gates writes on the selected editor, and checks for missing output files before opening.
 
 Projects use `netstandard2.1` as the design-time target framework with implicit framework references disabled. Unity's explicit reference assemblies determine the API surface; the installed .NET SDK does not choose the C# language version or replace Unity's references. SDK source globs, implicit usings, default .NET analyzers, and generated assembly/framework attributes are disabled. Unity/project analyzers are emitted explicitly. Intermediate and output paths are isolated per assembly under `Temp/OpenIDEA/`.
 
 All files are rendered before writing. Contents are compared before replacement, each changed file is replaced through a neighboring temporary file, and the solution is written last. This is atomic per file, not a transaction across the complete solution. A failed collection or render preserves all existing files; an I/O failure is reported and can be retried.
 
-The generator owns the standard root solution and matching assembly project filenames during generation. It does not delete unselected project files or preserve custom solution entries. The first step does not invoke AssetPostprocessor generation callbacks, create Player-only variants, or automatically regenerate when a script opens or compilation inputs change. Those behaviors belong to the subsequent synchronization work.
+The generator owns the standard root solution and matching assembly project filenames during generation. It does not delete unselected project files or preserve custom solution entries. AssetPostprocessor generation callbacks and Player-only variants are not implemented yet.
 
-Validation should include loading the generated solution in OpenIDEA's actual `csharp-ls`, not just parsing XML. Pure generation tests cover graph references, option filtering, paths, escaping, repeatability, and failed renders. `UnityProjectGenerationIntegrationTests` checks the real imported package against Unity's compilation API and must run in the Unity Editor.
+## Automatic synchronization
+
+Only the registered adapter subscribes to Editor events. Automatic work requires that this instance is Unity's current code editor; switching away cancels its pending writes. Unity calls `Initialize` on selection and registration after a domain reload, which schedules a fresh pass and recovers work lost during script reload.
+
+- `CompilationPipeline.compilationFinished` requests synchronization, including after failed compilation when no domain reload occurs. Define and compiler-setting changes are picked up from the resulting compilation graph.
+- `CompilationPipeline.codeOptimizationChanged` and `PackageManager.Events.registeredPackages` request synchronization for optimization and package changes.
+- Unity's `SyncIfNeeded` supplies relevant asset changes, including `.cs`, `.asmdef`, `.asmref`, `.rsp`, DLLs, compiler configuration, and package manifests. Generated `.sln`/`.csproj` files and ordinary unrelated assets do not trigger another pass.
+- Unity's `SyncAll` dispatch already covers build-target changes and **Assets > Open C# Project**; no duplicate build-target callback is registered.
+- Package-source option changes request synchronization immediately.
+
+Automatic requests wait for a 0.5-second quiet period. Imports, compilation, and player builds postpone execution; repeated notifications collapse into one full snapshot. All writing still compares generated contents, so unchanged projects keep their timestamps. The generator does not depend on compiled script DLLs being successfully loaded before collecting the Editor graph.
+
+Explicit regeneration and valid open requests can bypass the quiet period when Unity is idle. Before the first open, the adapter ensures this domain has synchronized; subsequent opens only regenerate when a request is pending, the last attempt failed, or one of the expected output files is missing. Unsupported files and invalid installation paths do not initiate generation. Busy or failed generation never prevents the launcher from attempting to open a valid script in OpenIDEA. A failed attempt logs once and retries on a new change, manual regeneration, or another open.
+
+Validation should include loading the generated solution in OpenIDEA's actual `csharp-ls`, not just parsing XML. Pure tests cover graph references, option filtering, paths, escaping, repeatability, failed renders, request coalescing, busy-state deferral, editor selection, missing outputs, and failure recovery. `UnityProjectGenerationIntegrationTests` checks the real imported package against Unity's compilation API and must run in the Unity Editor. Editor smoke checks should also exercise a script add/move/delete, a failed compilation followed by a fix, a package-source toggle, and switching to another IDE while synchronization is queued.

@@ -159,6 +159,40 @@ namespace OpenIDEA.Editor.Tests
         }
 
         [Test]
+        public void ProjectPreparationRunsBeforeTheEditorProcessStarts()
+        {
+            var prepared = false;
+            var launcher = Launcher(start: _ =>
+            {
+                Assert.That(prepared, Is.True);
+                return true;
+            });
+            Assert.That(launcher.Open(_editor, _project, "", 0, 0, OpenIDEAArguments.DefaultTemplate,
+                new[] { "cs" }, () => prepared = true), Is.True);
+        }
+
+        [TestCase("Image.png")]
+        [TestCase("Missing.cs")]
+        public void RejectedFileRequestsDoNotGenerateProjectFiles(string file)
+        {
+            if (file.EndsWith(".png")) CreateFile(Path.Combine(_project, file));
+            Assert.That(Launcher().Open(_editor, _project, file, 0, 0, OpenIDEAArguments.DefaultTemplate,
+                new[] { "cs" }, () => Assert.Fail("Rejected requests must not generate project files")), Is.False);
+        }
+
+        [Test]
+        public void GenerationFailureDoesNotSendTheScriptToTheSystemFileAssociation()
+        {
+            var errors = new List<Exception>();
+            var synchronization = new ProjectSynchronization(() => true, () => false, () => 0,
+                () => throw new IOException("Generation failed"), errors.Add);
+            Assert.That(Launcher().Open(_editor, _project, "", 0, 0, OpenIDEAArguments.DefaultTemplate,
+                new[] { "cs" }, synchronization.EnsureGenerated), Is.True);
+            Assert.That(errors, Has.Count.EqualTo(1));
+            Assert.That(_started, Is.Not.Null);
+        }
+
+        [Test]
         public void LinuxAppImageIsExecutedDirectly()
         {
             _editor = CreateFile("OpenIDEA_0.1.37_amd64.AppImage");

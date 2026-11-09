@@ -25,7 +25,7 @@ namespace OpenIDEA.Editor
         }
 
         internal bool Open(string editorPath, string projectDirectory, string filePath, int line, int column,
-            string arguments, IEnumerable<string> extensions)
+            string arguments, IEnumerable<string> extensions, Action beforeOpen = null)
         {
             try
             {
@@ -73,6 +73,7 @@ namespace OpenIDEA.Editor
                         + " --args " + startInfo.Arguments;
                 }
 
+                beforeOpen?.Invoke();
                 if (_start(startInfo))
                     return true;
 

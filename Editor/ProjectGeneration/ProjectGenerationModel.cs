@@ -45,12 +45,14 @@ namespace OpenIDEA.Editor
         internal readonly string SolutionPath;
         internal readonly int ProjectCount;
         internal readonly int ChangedFiles;
+        internal readonly string[] GeneratedFiles;
 
-        internal ProjectGenerationResult(string solutionPath, int projectCount, int changedFiles)
+        internal ProjectGenerationResult(string solutionPath, int projectCount, int changedFiles, string[] generatedFiles)
         {
             SolutionPath = solutionPath;
             ProjectCount = projectCount;
             ChangedFiles = changedFiles;
+            GeneratedFiles = generatedFiles;
         }
     }
 }
