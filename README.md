@@ -2,7 +2,7 @@
 
 Unity Editor integration for [OpenIDEA](https://github.com/l0ng-ai/openidea), maintained as the UPM package `com.hacbit.ide.openidea`.
 
-The package discovers OpenIDEA installations, supports manually selected copies, and opens Unity projects and scripts at the requested line and column. Solution and project file generation are not implemented yet.
+The package discovers OpenIDEA installations, supports manually selected copies, opens projects and scripts at the requested line and column, and manually generates C# solutions and projects for OpenIDEA.
 
 ## Target
 
@@ -39,6 +39,18 @@ Paths are quoted automatically, including spaces and non-ASCII characters. Previ
 
 The selected OpenIDEA build must support the `--file`, `--line`, and `--column` arguments. If launching the editor fails, the package reports the error in the Unity Console.
 
+## Generate C# project files
+
+In **Preferences > External Tools**, select OpenIDEA, choose the package sources under **Generate .csproj files for**, and click **Regenerate project files**. The panel reports the number of projects generated and files updated. Wait for Unity to finish importing and compiling before generating.
+
+Assets assemblies are always included. **Embedded packages** and **Local packages** are enabled by default. Registry, Git, built-in, local tarball, and unknown package sources can be enabled individually. These preferences belong to OpenIDEA and do not change another editor's generation settings. Changes take effect when you regenerate.
+
+The package writes `<project directory name>.sln` and one SDK-style `.csproj` per selected Unity assembly in the Unity project root. Source references, defines, language version, unsafe settings, analyzers, and response-file options come from Unity's Editor compilation graph. Excluded packages remain available through DLL references; include their source projects when you want source analysis and navigation. Missing compiled DLLs require Unity to compile those dependencies first.
+
+OpenIDEA uses `csharp-ls` to load these files. A compatible .NET SDK and language server must be available in OpenIDEA. Generated projects use explicit Unity references and put design-time outputs under `Temp/OpenIDEA/`.
+
+Generation replaces the standard solution and matching project files. Unchanged contents are not rewritten. Previously generated projects that are no longer selected are removed from the solution but their `.csproj` files are retained. Automatic synchronization, Player-only projects, and AssetPostprocessor generation callbacks are not implemented in this first step; regenerate manually after changing files, packages, defines, or build targets. Opening a script alone does not regenerate the solution.
+
 ## Local development
 
 The repository root is the package root. Keep this checkout at:
@@ -50,8 +62,8 @@ The repository root is the package root. Keep this checkout at:
 Unity imports it as an embedded package. Commit changes from this directory; the surrounding Unity project and its generated files are outside this repository.
 
 ```text
-Editor/          Editor registration, discovery, and launching
-Tests/Editor/    Discovery, argument, launcher, and integration tests
+Editor/          Editor registration, discovery, launching, and project generation
+Tests/Editor/    Discovery, launcher, generation, and Unity integration tests
 Documentation~/  Package documentation
 package.json     UPM package manifest
 ```
@@ -68,7 +80,8 @@ https://github.com/hacbit/openidea-unity.git
 
 ## Planned integration
 
-- Generate and synchronize C# solutions and projects.
+- Automatically synchronize C# solutions and projects as Unity compilation inputs change.
+- Support generation callbacks, Player configurations, and cleanup of obsolete generated projects.
 
 See [the integration notes](Documentation~/index.md) and [contributing guide](CONTRIBUTING.md).
 

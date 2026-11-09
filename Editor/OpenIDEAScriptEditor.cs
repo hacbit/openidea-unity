@@ -15,6 +15,8 @@ namespace OpenIDEA.Editor
         private static readonly GUIContent _resetArguments = EditorGUIUtility.TrTextContent("Reset argument");
         private readonly IDiscovery _discovery;
         private readonly OpenIDEALauncher _launcher;
+        private string _generationMessage;
+        private MessageType _generationMessageType;
 
         private static string DefaultArgument => OpenIDEAArguments.DefaultTemplate;
 
@@ -73,7 +75,35 @@ namespace OpenIDEA.Editor
             if (EditorGUI.EndChangeCheck())
                 HandledExtensionsString = extensions;
 
-            EditorGUILayout.HelpBox("Solution and project file generation is not available in this version.", MessageType.Info);
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Generate .csproj files for:", EditorStyles.boldLabel);
+            var sources = ProjectGenerationSettings.Sources;
+            EditorGUI.BeginChangeCheck();
+            sources = SourceToggle(sources, ProjectGenerationSources.Embedded, "Embedded packages");
+            sources = SourceToggle(sources, ProjectGenerationSources.Local, "Local packages");
+            sources = SourceToggle(sources, ProjectGenerationSources.Registry, "Registry packages");
+            sources = SourceToggle(sources, ProjectGenerationSources.Git, "Git packages");
+            sources = SourceToggle(sources, ProjectGenerationSources.BuiltIn, "Built-in packages");
+            sources = SourceToggle(sources, ProjectGenerationSources.LocalTarball, "Local tarball packages");
+            sources = SourceToggle(sources, ProjectGenerationSources.Unknown, "Unknown package sources");
+            if (EditorGUI.EndChangeCheck())
+            {
+                ProjectGenerationSettings.Sources = sources;
+                _generationMessage = null;
+            }
+            EditorGUILayout.HelpBox("Assets are always included. Apply these options with Regenerate project files. Automatic synchronization is not available yet.", MessageType.Info);
+            using (new EditorGUI.DisabledScope(EditorApplication.isCompiling || EditorApplication.isUpdating))
+            {
+                if (GUILayout.Button("Regenerate project files"))
+                    SyncAll();
+            }
+            if (!string.IsNullOrEmpty(_generationMessage))
+                EditorGUILayout.HelpBox(_generationMessage, _generationMessageType);
+        }
+
+        private static ProjectGenerationSources SourceToggle(ProjectGenerationSources selected, ProjectGenerationSources source, string label)
+        {
+            return EditorGUILayout.Toggle(label, (selected & source) != 0) ? selected | source : selected & ~source;
         }
 
         public bool OpenProject(string filePath = "", int line = -1, int column = -1)
@@ -85,6 +115,20 @@ namespace OpenIDEA.Editor
 
         public void SyncAll()
         {
+            try
+            {
+                if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+                    throw new InvalidOperationException("Wait for Unity to finish importing and compiling, then regenerate project files.");
+                var result = OpenIDEAProjectGeneration.Generate(Directory.GetParent(Application.dataPath).FullName, ProjectGenerationSettings.Sources);
+                _generationMessage = $"Generated {result.ProjectCount} C# projects and {Path.GetFileName(result.SolutionPath)}. Updated {result.ChangedFiles} files.";
+                _generationMessageType = MessageType.Info;
+            }
+            catch (Exception exception)
+            {
+                _generationMessage = "Project generation failed: " + exception.Message;
+                _generationMessageType = MessageType.Error;
+                Debug.LogError("OpenIDEA: " + _generationMessage);
+            }
         }
 
         public void SyncIfNeeded(string[] addedFiles, string[] deletedFiles, string[] movedFiles, string[] movedFromFiles, string[] importedFiles)
